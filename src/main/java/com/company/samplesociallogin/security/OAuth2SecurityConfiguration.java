@@ -1,5 +1,6 @@
 package com.company.samplesociallogin.security;
 
+import com.company.samplesociallogin.entity.User;
 import io.jmix.security.role.RoleGrantedAuthorityUtils;
 import io.jmix.securityflowui.security.FlowuiVaadinWebSecurity;
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,9 +71,18 @@ public class OAuth2SecurityConfiguration extends FlowuiVaadinWebSecurity {
             // Delegate to the default implementation for loading a user
             OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-            // todo implement
+            Integer githubId = oAuth2User.getAttribute("id");
 
-            return oAuth2User;
+            //find or create user with given GitHub id
+            User jmixUser = oidcUserPersistence.loadUserByGithubId(githubId);
+            jmixUser.setUsername(oAuth2User.getName());
+            jmixUser.setGithubId(githubId);
+            jmixUser.setEmail(oAuth2User.getAttribute("email"));
+
+            User savedJmixUser = oidcUserPersistence.saveUser(jmixUser);
+            savedJmixUser.setAuthorities(getDefaultGrantedAuthorities());
+            return savedJmixUser;
+
         };
     }
 
@@ -85,9 +95,16 @@ public class OAuth2SecurityConfiguration extends FlowuiVaadinWebSecurity {
             // Delegate to the default implementation for loading a user
             OidcUser oidcUser = delegate.loadUser(userRequest);
 
-            // todo implement
+            String googleId = oidcUser.getSubject();
 
-            return oidcUser;
+            User jmixUser = oidcUserPersistence.loadUserByGoogleId(googleId);
+            jmixUser.setUsername(googleId);
+            jmixUser.setGoogleId(googleId);
+            jmixUser.setEmail(oidcUser.getEmail());
+
+            User savedJmixUser = oidcUserPersistence.saveUser(jmixUser);
+            savedJmixUser.setAuthorities(getDefaultGrantedAuthorities());
+            return savedJmixUser;
         };
     }
 
